@@ -249,7 +249,7 @@ export class BullMQMetricsFactory {
     queueEvents.on('completed', async (event) => {
       const job = await queue.getJob(event.jobId);
       const jobLabels = {
-        [LABEL_NAMES.JOB_NAME]: job.name,
+        [LABEL_NAMES.JOB_NAME]: job?.name ?? "No Name",
         ...labels,
       };
       this.jobs_completed.inc(jobLabels, 1);
