@@ -165,6 +165,47 @@ export class BullMQMetricsFactory {
     });
   }
 
+  async removeCounterAndSummaryLabelsAfterDelay(
+    labels: Record<string, string>,
+    delay = 10000,
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    this.job_duration.remove(labels);
+    this.job_wait_duration.remove(labels);
+    this.job_attempts.remove(labels);
+    this.jobs_active.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+    });
+    this.jobs_waiting.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+    });
+    this.jobs_failed.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+      [LABEL_NAMES.ERROR_TYPE]: labels[LABEL_NAMES.ERROR_TYPE],
+    });
+    this.jobs_completed.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+    });
+    this.jobs_stalled.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+    });
+    this.jobs_delayed.remove({
+      [LABEL_NAMES.QUEUE_PREFIX]: labels[LABEL_NAMES.QUEUE_PREFIX],
+      [LABEL_NAMES.QUEUE_NAME]: labels[LABEL_NAMES.QUEUE_NAME],
+      [LABEL_NAMES.JOB_NAME]: labels[LABEL_NAMES.JOB_NAME],
+    });
+  }
+
   recordJobMetrics(
     labels: Record<string, string>,
     status: STATUS_TYPES,
@@ -181,6 +222,7 @@ export class BullMQMetricsFactory {
     this.job_duration.observe(jobLabels, jobDuration);
     this.job_wait_duration.observe(jobLabels, job.processedOn - job.timestamp);
     this.job_attempts.observe(jobLabels, job.attemptsMade);
+    this.removeCounterAndSummaryLabelsAfterDelay(jobLabels);
   }
 
   create(queuePrefix: string, queueName: string, queue: Queue) {
@@ -249,7 +291,7 @@ export class BullMQMetricsFactory {
     queueEvents.on('completed', async (event) => {
       const job = await queue.getJob(event.jobId);
       const jobLabels = {
-        [LABEL_NAMES.JOB_NAME]: job?.name ?? "No Name",
+        [LABEL_NAMES.JOB_NAME]: job.name,
         ...labels,
       };
       this.jobs_completed.inc(jobLabels, 1);
