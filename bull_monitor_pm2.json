@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "name": "bull_monitor",
+      "script": "dist/daemon.js",
+      "env": {
+        "REDIS_HOST": "",
+        "REDIS_PORT": ""
+      }
+    }
+  ]
+}
